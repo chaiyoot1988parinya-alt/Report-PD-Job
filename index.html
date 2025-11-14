@@ -53,34 +53,39 @@
         document.getElementById("reader").innerHTML = "";
 
         if (type === "job") {
-          const jobNo = msg.slice(0, 13);
-          const operNo = msg.slice(13);
-          document.getElementById("jobNo").value = jobNo;
-          document.getElementById("operNo").value = operNo;
+  if (msg.length === 17) {
+    const jobNo = msg.slice(0, 11);     // ตัวที่ 0–10
+    const operNo = msg.slice(11);       // ตัวที่ 11–17
+    document.getElementById("jobNo").value = jobNo;
+    document.getElementById("operNo").value = operNo;
 
-          document.getElementById("staffName").value = "";
-          document.getElementById("startTime").value = "";
-          document.getElementById("scanStaffBtn").disabled = false;
-          document.getElementById("scanStaffBtn").style.opacity = 1;
-          document.getElementById("scanStaffBtn").innerText = "👷 สแกนพนักงาน";
-          updateActionButtonState();
+    document.getElementById("staffName").value = "";
+    document.getElementById("startTime").value = "";
+    document.getElementById("scanStaffBtn").disabled = false;
+    document.getElementById("scanStaffBtn").style.opacity = 1;
+    document.getElementById("scanStaffBtn").innerText = "👷 สแกนพนักงาน";
+    updateActionButtonState();
 
-          fetch(`https://script.google.com/macros/s/AKfycbz3RdaYdKbylH0NmVDCK79ssPwcMAjDz_6ylnZDT7oPlyIORhIuxIJvs5TOGf2xWpjtbQ/exec?mode=pdreportInfo&jobNo=${jobNo}&operNo=${operNo}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.name) {
-                document.getElementById("staffName").value = data.name;
-                document.getElementById("startTime").value = data.start;
-                document.getElementById("scanStaffBtn").disabled = true;
-                document.getElementById("scanStaffBtn").style.opacity = 0.5;
-                document.getElementById("scanStaffBtn").innerText = "✅ มีชื่อพนักงานแล้ว";
-                document.getElementById("actionBtn").innerText = "📤 บันทึกข้อมูล";
-              } else {
-                document.getElementById("actionBtn").innerText = "🚀 เริ่มการผลิต";
-              }
-              updateActionButtonState();
-            });
+    fetch(`https://script.google.com/macros/s/AKfycbz3RdaYdKbylH0NmVDCK79ssPwcMAjDz_6ylnZDT7oPlyIORhIuxIJvs5TOGf2xWpjtbQ/exec?mode=pdreportInfo&jobNo=${jobNo}&operNo=${operNo}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.name) {
+          document.getElementById("staffName").value = data.name;
+          document.getElementById("startTime").value = data.start;
+          document.getElementById("scanStaffBtn").disabled = true;
+          document.getElementById("scanStaffBtn").style.opacity = 0.5;
+          document.getElementById("scanStaffBtn").innerText = "✅ มีชื่อพนักงานแล้ว";
+          document.getElementById("actionBtn").innerText = "📤 บันทึกข้อมูล";
+        } else {
+          document.getElementById("actionBtn").innerText = "🚀 เริ่มการผลิต";
         }
+        updateActionButtonState();
+      });
+  } else {
+    alert("❌ QR ที่สแกนไม่ครบ 17 หลัก");
+  }
+}
+
 
         else if (type === "staff") {
           document.getElementById("staffName").value = msg;
