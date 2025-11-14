@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>รายงานการผลิต</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { font-family: sans-serif; padding: 10px; max-width: 400px; margin: auto; }
+    input, button { margin: 5px 0; padding: 8px; width: 100%; font-size: 16px; }
+    #reader { width: 100%; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h2>ระบบรายงานการผลิต</h2>
+
+  <button onclick="scanQR('job')">📦 สแกนจ๊อบ</button>
+  <input id="jobNo" placeholder="JobNo" readonly>
+  <input id="operNo" placeholder="OperNo" readonly>
+  <input id="staffName" placeholder="ชื่อพนักงาน" readonly>
+  <input id="startTime" placeholder="เวลาเริ่มผลิต" readonly>
+  <input id="endTime" placeholder="เวลาที่ผลิตแล้วเสร็จ">
+  <input id="quantity" placeholder="จำนวนที่ผลิตได้จริง">
+  <input id="machine" placeholder="เครื่องจักร" readonly>
+
+  <button id="scanStaffBtn" onclick="scanQR('staff')">👷 สแกนพนักงาน</button>
+  <button onclick="scanQR('machine')">🛠️ สแกนเครื่องจักร</button>
+  <button id="actionBtn" onclick="submitProduction()" disabled style="opacity:0.5">🚀 เริ่มการผลิต</button>
+
+  <div id="reader"></div>
+
+  <script>
+    let mode = "start";
+
+    function updateActionButtonState() {
+      const jobNo = document.getElementById("jobNo").value;
+      const staffName = document.getElementById("staffName").value;
+      const actionBtn = document.getElementById("actionBtn");
+
+      if (jobNo && staffName) {
+        actionBtn.disabled = false;
+        actionBtn.style.opacity = 1;
+      } else {
+        actionBtn.disabled = true;
+        actionBtn.style.opacity = 0.5;
+      }
+    }
+
+    function scanQR(type) {
+      document.getElementById("reader").innerHTML = "";
+      const scanner = new Html5Qrcode("reader");
+      scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, msg => {
+        scanner.stop();
+        document.getElementById("reader").innerHTML = "";
+
+        if (type === "job") {
+          const jobNo = msg.slice(0, 13);
+          const operNo = msg.slice(13);
+          document.getElementById("jobNo").value = jobNo;
+          document.getElementById("operNo").value = operNo;
+
+          document.getElementById("staffName").value = "";
+          document.getElementById("startTime").value = "";
+          document.getElementById("scanStaffBtn").disabled = false;
+          document.getElementById("scanStaffBtn").style.opacity = 1;
+          document.getElementById("scanStaffBtn").innerText = "👷 สแกนพนักงาน";
+          updateActionButtonState();
+
+          fetch(`https://script.google.com/macros/s/AKfycbz3RdaYdKbylH0NmVDCK79ssPwcMAjDz_6ylnZDT7oPlyIORhIuxIJvs5TOGf2xWpjtbQ/exec?mode=pdreportInfo&jobNo=${jobNo}&operNo=${operNo}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.name) {
+                document.getElementById("staffName").value = data.name;
+                document.getElementById("startTime").value = data.start;
+                document.getElementById("scanStaffBtn").disabled = true;
+                document.getElementById("scanStaffBtn").style.opacity = 0.5;
+                document.getElementById("scanStaffBtn").innerText = "✅ มีชื่อพนักงานแล้ว";
+                document.getElementById("actionBtn").innerText = "📤 บันทึกข้อมูล";
+              } else {
+                document.getElementById("actionBtn").innerText = "🚀 เริ่มการผลิต";
+              }
+              updateActionButtonState();
+            });
+        }
+
+        else if (type === "staff") {
+          document.getElementById("staffName").value = msg;
+          document.getElementById("startTime").value = new Date().toISOString();
+          updateActionButtonState();
+        }
+
+        else if (type === "machine") {
+          document.getElementById("machine").value = msg;
+        }
+      });
+    }
+
+    function submitProduction() {
+      const payload = {
+        mode: "pdreport",
+        jobNo: document.getElementById("jobNo").value,
+        operNo: document.getElementById("operNo").value,
+        name: document.getElementById("staffName").value,
+        start: document.getElementById("startTime").value,
+        end: document.getElementById("endTime").value,
+        qty: document.getElementById("quantity").value,
+        machine: document.getElementById("machine").value
+      };
+
+      fetch("https://script.google.com/macros/s/AKfycbz3RdaYdKbylH0NmVDCK79ssPwcMAjDz_6ylnZDT7oPlyIORhIuxIJvs5TOGf2xWpjtbQ/exec", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(payload)
+      })
+      .then(res => res.text())
+      .then(msg => {
+        alert(msg);
+        document.getElementById("actionBtn").disabled = true;
+        document.getElementById("actionBtn").innerText = "✅ บันทึกแล้ว";
+        document.getElementById("actionBtn").style.opacity = 0.5;
+      });
+    }
+  </script>
+</body>
+</html>
